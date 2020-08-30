@@ -1,0 +1,6 @@
+#!/bin/bash
+#
+#
+service torque-server stop
+service torque-scheduler stop
+service torque-mom stop
