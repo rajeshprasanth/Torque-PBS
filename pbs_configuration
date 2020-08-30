@@ -1,0 +1,195 @@
+EXTRACT FROM https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
+
+===============
+Installation
+===============
+
+sudo apt-get install torque-server torque-client torque-mom torque-pam
+
+Configuration
+=============
+
+1. Stop all services runnings
+
+sudo service torque-server stop
+sudo service torque-scheduler stop
+sudo service torque-mom stop
+
+
+****for starting the services use this****
+sudo service torque-server start
+sudo service torque-scheduler start
+sudo service torque-mom start
+
+
+
+2. Start pbs_server is create mode
+
+sudo pbs_server -t create
+
+if prompt as you to accept the config. hit yes
+note down hostname and domain name
+
+3. kill just invoked pbs_server
+
+sudo killall pbs_server
+
+4. Run this command for configuration.
+
+echo SERVER.DOMAIN > /etc/torque/server_name
+echo SERVER.DOMAIN > /var/spool/torque/server_priv/acl_svr/acl_hosts
+echo root@SERVER.DOMAIN > /var/spool/torque/server_priv/acl_svr/operators
+echo root@SERVER.DOMAIN > /var/spool/torque/server_priv/acl_svr/managers
+echo "SERVER.DOMAIN np=4" > /var/spool/torque/server_pr
+echo SERVER.DOMAIN > /var/spool/torque/mom_priv/config
+
+
+====for example============
+echo ubuntu.ubuntu-domain > /etc/torque/server_name
+echo ubuntu.ubuntu-domain > /var/spool/torque/server_priv/acl_svr/acl_hosts
+echo root@ubuntu.ubuntu-domain > /var/spool/torque/server_priv/acl_svr/operators
+echo root@ubuntu.ubuntu-domain > /var/spool/torque/server_priv/acl_svr/managers
+
+echo root@localhost > /var/spool/torque/server_priv/acl_svr/operators
+echo root@localhost > /var/spool/torque/server_priv/acl_svr/managers
+
+
+5. Start the services in this order.
+
+sudo service torque-server start
+sudo service torque-scheduler start
+sudo service torque-mom start
+
+use this command to find logs caused due to unauthorized entries
+grep Unauthorized /var/spool/torque/server_logs/*
+
+
+qmgr -c 'create queue batch'
+qmgr -c 'set server scheduling = true'
+qmgr -c 'set server keep_completed = 300'
+qmgr -c 'set server mom_job_sync = true'
+qmgr -c 'set queue batch queue_type = execution'
+qmgr -c 'set queue batch started = true'
+qmgr -c 'set queue batch enabled = true'
+qmgr -c 'set queue batch resources_default.walltime = 5:00:00'
+qmgr -c 'set queue batch resources_default.nodes = 1'
+qmgr -c 'set server default_queue = batch'
+qmgr -c 'set server submit_hosts = SERVER'
+qmgr -c 'set server allow_node_submit = true'
+
+
+
+
+==================================PBS Commands===============================
+
+===========
+qsub---To submit a batch job to the specified queue using a script:
+==========
+
+%qsub -q queue_name job_script 
+
+Queue names on Pleiades include normal, debug, long, devel, and low. When queue_name is omitted, the job is routed to the default queue, which is the normal queue.
+
+To submit an interactive PBS job:
+
+%qsub -I -q queue_name -l resource_list 
+
+No job_script should be included when submitting an interactive PBS job.
+
+The resource_list typically specifies the number of nodes, CPUs, amount of memory and wall time needed for this job. The following example shows a request for a single Pleiades Ivy Bridge node and a wall time of 2 hours.
+
+%qsub -I -lselect=1:ncpus=20:model=ivy,walltime=2:00:00
+
+See man pbs_resources for more information on what resources can be specified.
+
+Note: If -l resource_list is omitted, the default resources for the specified queue is used. When queue_name is omitted, the job is routed to the default queue, which is the normal queue.
+qstat
+
+To display queue information:
+
+%qstat -Q queue_name
+%qstat -q queue_name
+%qstat -fQ queue_name 
+
+Each option uses a different format to display all of the queues available, and their constraints and status. The queue_name is optional.
+
+To display job status:
+
+-a
+    Display all jobs in any status (running, queued, held)
+-r
+    Display all running or suspended jobs
+-n
+    Display the execution hosts of the running jobs
+-i
+    Display all queued, held or waiting jobs
+-u username
+    Display jobs that belong to the specified user
+-s
+    Display any comment added by the administrator or scheduler. This option is typically used to find clues of why a job has not started running.
+-f job_id
+    Display detailed information about a specific job
+-xf job_id,
+-xu user_id
+    Display status information for finished jobs (within the past 7 days). This option is only available in the newer version of PBS, which has been installed on Pleiades and Endeavour.
+
+TIP: Some of these flags can be combined when you are checking the job status.
+qdel
+
+To delete (cancel) a job:
+
+%qdel job_id 
+
+qhold
+
+To hold a job:
+
+%qhold job_id 
+
+Only the job owner or a system administrator with "su" or "root" privilege can place a hold on a job. The hold can be released using the qrls command.
+
+For more detailed information on each command, see their corresponding man pages.
+
+
+===========================================
+Qsub options
+=========================================
+-1 list ----List of resources needed by job
+-q queue ---Queue to submit job to
+-N name---Name of job
+-S shell---Shell to execute job script
+-p priority---Priority of job relative to your jobs
+-a datetime---Delay job under after datetime
+-j oe----Join output and error files
+-h----Place a hold on job
+
+
+=========================
+PBS resources
+========================
+arch---System architecture needed by job
+cput---CPU time required by all processes in job
+file---Maximum single file disk space requirements
+mem---Total amount of RAM memory required
+ncpus---Number of CPUs (processors) required
+nice---Requested "nice" (Unix priority) value
+nodes---Number and/or type of nodes needed
+pcput---Maximum per-process CPU time required
+pmem---Maximum per-process memory required
+wall time---Total wall-clock time needed
+workingset--Total disk space requirements
+=============================================
+PBS user commands
+==================
+qalter----Alter job(s)
+qdel---Delete job(s)
+qhold----Hold job(s)
+qmsg---Send a message to job(s)
+qmove----Move job(s) to another queue
+qrls---Release held job(s)
+qrerun----Rerun job(s)
+qselect---Select a specific subset of jobs
+qsig---Send a signal to job(s)
+qstat---Show status of job(s)
+qsub---Submit job(s)
+xpbs---Graphical Interface (GUI) to PBS commands
